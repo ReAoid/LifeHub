@@ -1,0 +1,33 @@
+services:
+  backend:
+    build:
+      context: ../lifehub-backend
+      dockerfile: Dockerfile
+    container_name: lifehub-backend
+    env_file:
+      - ../lifehub-backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../lifehub-backend:/app
+      - sqlite_data:/app  # persist SQLite DB
+    command: >
+      sh -c "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  frontend:
+    build:
+      context: ../lifehub-web
+      dockerfile: Dockerfile
+    container_name: lifehub-web
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ../lifehub-web:/app
+      - /app/node_modules
+    command: >
+      sh -c "npm run dev -- --host 0.0.0.0"
+
+volumes:
+  sqlite_data:

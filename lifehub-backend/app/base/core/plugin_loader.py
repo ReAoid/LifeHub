@@ -17,13 +17,13 @@ logger = logging.getLogger("lifehub.plugin_loader")
 class Plugin:
     """Descriptor for a single plugin module."""
 
-    name: str
-    version: str = "0.1.0"
-    router_prefix: str = ""
-    router_module: str = ""
-    models: list[str] = field(default_factory=list)
-    events_subscribe: list[str] = field(default_factory=list)
-    enabled: bool = True
+    name: str # 插件名，比如 daily / finance
+    version: str = "0.1.0" # 版本号
+    router_prefix: str = "" # 接口统一前缀，比如 /finance
+    router_module: str = "" # 路由模块路径，比如 app.modules.finance.router
+    models: list[str] = field(default_factory=list) # 模型模块路径列表，比如 ["app.modules.finance.models"]
+    events_subscribe: list[str] = field(default_factory=list) # 事件订阅列表，比如 ["user_registered", "daily_completed"]
+    enabled: bool = True # 是否启用
 
 
 class PluginLoader:

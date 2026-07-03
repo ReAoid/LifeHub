@@ -16,10 +16,10 @@ class EventBus:
     """
 
     def __init__(self) -> None:
-        self._handlers: dict[str, list[Callable]] = {}
-        self._queue: asyncio.Queue = asyncio.Queue()
-        self._listener_task: asyncio.Task | None = None
-        self._running = False
+        self._handlers: dict[str, list[Callable]] = {} # 事件处理器字典，键为事件名，值为处理器列表
+        self._queue: asyncio.Queue = asyncio.Queue() # 消息排队篮子
+        self._listener_task: asyncio.Task | None = None # 后台监听任务
+        self._running = False # 事件总线运行状态
 
     async def connect(self) -> None:
         """Initialize (no-op for in-memory)."""

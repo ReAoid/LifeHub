@@ -8,5 +8,5 @@ plugin = Plugin(
     router_prefix="/api/finance",
     router_module="app.modules.module_finance.api",
     models=["app.modules.module_finance.models"],
-    events_subscribe=[],
+    events_subscribe=["AssetPriceUpdate"],
 )

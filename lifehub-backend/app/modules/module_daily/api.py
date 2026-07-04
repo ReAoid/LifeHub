@@ -59,6 +59,20 @@ async def list_tasks(
     return success_response(data=[TaskResponse.model_validate(t) for t in tasks])
 
 
+@router.put("/tasks/reorder", response_model=dict)
+async def reorder_tasks(
+    task_ids: list[uuid.UUID],
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Bulk reorder tasks."""
+    tasks = await task_service.reorder_tasks(db, current_user.id, task_ids)
+    return success_response(
+        data=[TaskResponse.model_validate(t).model_dump(mode="json") for t in tasks],
+        message="Tasks reordered",
+    )
+
+
 @router.get("/tasks/{task_id}", response_model=dict)
 async def get_task(
     task_id: uuid.UUID,
@@ -108,20 +122,6 @@ async def delete_task(
     """Delete a task (and its subtasks)."""
     await task_service.delete_task(db, current_user.id, task_id)
     return success_response(message="Task deleted")
-
-
-@router.put("/tasks/reorder", response_model=dict)
-async def reorder_tasks(
-    task_ids: list[uuid.UUID],
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Bulk reorder tasks."""
-    tasks = await task_service.reorder_tasks(db, current_user.id, task_ids)
-    return success_response(
-        data=[TaskResponse.model_validate(t).model_dump(mode="json") for t in tasks],
-        message="Tasks reordered",
-    )
 
 
 @router.get("/tasks/{task_id}/subtasks", response_model=dict)

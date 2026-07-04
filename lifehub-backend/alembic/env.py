@@ -20,6 +20,9 @@ from app.base.models.attachment import Attachment  # noqa: F401
 # Import module_daily models for Phase 2
 from app.modules.module_daily.models import Task, Habit, HabitLog, Goal  # noqa: F401
 
+# Import module_finance models for Phase 3
+from app.modules.module_finance.models import Account, Bill, Budget, Asset, InvestPlan  # noqa: F401
+
 # Alembic Config object
 config = context.config
 

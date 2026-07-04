@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { Outlet, Navigate } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
-import { useAuthStore } from '@/base/stores/authStore'
+import { useAuth } from '@/base/hooks/useAuth'
 import { LoadingSpinner } from '@/base/components/LoadingSpinner'
 
 export function AppLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const { isAuthenticated, isLoading } = useAuthStore()
+  const { isAuthenticated, isLoading } = useAuth()
 
   if (isLoading) {
     return (

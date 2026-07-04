@@ -11,6 +11,10 @@ import {
   Tags,
   type LucideIcon,
   CheckSquare,
+  Receipt,
+  PiggyBank,
+  TrendingUp,
+  RefreshCw,
 } from 'lucide-react'
 import { useAuthStore } from '@/base/stores/authStore'
 
@@ -29,6 +33,10 @@ const mainNavItems: NavItem[] = [
   { title: 'Goals', href: '/daily/goals', icon: BookOpen, module: 'daily' },
   { title: 'Finance', href: '/finance', icon: PieChart, module: 'finance' },
   { title: 'Accounts', href: '/finance/accounts', icon: Wallet, module: 'finance' },
+  { title: 'Bills', href: '/finance/bills', icon: Receipt, module: 'finance' },
+  { title: 'Budgets', href: '/finance/budgets', icon: PiggyBank, module: 'finance' },
+  { title: 'Portfolio', href: '/finance/portfolio', icon: TrendingUp, module: 'finance' },
+  { title: 'Invest', href: '/finance/invest-plans', icon: RefreshCw, module: 'finance' },
 ]
 
 const bottomNavItems: NavItem[] = [

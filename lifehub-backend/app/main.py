@@ -5,7 +5,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.base.api import auth, sync, tags, users
+from app.base.api import auth, dashboard, sync, tags, users
 from app.base.core.config import settings
 from app.base.core.event_bus import event_bus
 from app.base.core.plugin_loader import PluginLoader
@@ -41,6 +41,7 @@ def create_app() -> FastAPI:
 
     # --- Register base routes ---
     app.include_router(auth.router)
+    app.include_router(dashboard.router)
     app.include_router(users.router)
     app.include_router(tags.router)
     app.include_router(sync.router)

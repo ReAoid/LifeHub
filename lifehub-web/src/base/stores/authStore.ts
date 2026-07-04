@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { UserResponse } from '@/base/api/auth'
+import { isTokenExpired } from '@/base/lib/jwt'
 
 interface AuthState {
   user: UserResponse | null
@@ -11,9 +12,27 @@ interface AuthState {
   hasPermission: (permission: string) => boolean
 }
 
+/** Check stored tokens and clear them if expired */
+function checkAndClearTokens(): boolean {
+  const accessToken = localStorage.getItem('access_token')
+  if (!accessToken) return false
+  if (isTokenExpired(accessToken)) {
+    // Try refreshing before giving up – only clear if refresh token also expired
+    const refreshToken = localStorage.getItem('refresh_token')
+    if (isTokenExpired(refreshToken)) {
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      return false
+    }
+    // Access token expired but refresh token still valid → keep tokens for interceptor to refresh
+    return true
+  }
+  return true
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  isAuthenticated: !!localStorage.getItem('access_token'),
+  isAuthenticated: checkAndClearTokens(),
   isLoading: false,
   setUser: (user) => set({ user, isAuthenticated: !!user }),
   setLoading: (isLoading) => set({ isLoading }),

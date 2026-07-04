@@ -5,7 +5,7 @@ import TagsPage from '@/base/pages/TagsPage'
 import SettingsPage from '@/base/pages/SettingsPage'
 import { baseRoutes } from '@/base/router/baseRoutes'
 import dailyRoutes from '@/modules/module-daily/routes'
-// import financeRoutes from '@/modules/module-finance/routes'
+import financeRoutes from '@/modules/module-finance/routes'
 
 const router = createBrowserRouter([
   {
@@ -17,8 +17,8 @@ const router = createBrowserRouter([
       { path: 'settings', element: <SettingsPage /> },
       // Module daily routes
       ...dailyRoutes,
-      // Module finance routes (will be added in Phase 3)
-      // ...financeRoutes,
+      // Module finance routes
+      ...financeRoutes,
     ],
   },
   ...baseRoutes,

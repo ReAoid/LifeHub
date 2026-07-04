@@ -23,8 +23,8 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { title: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { title: 'Daily', href: '/daily', icon: Calendar, module: 'daily' },
   { title: 'Tasks', href: '/daily/tasks', icon: CheckSquare, module: 'daily' },
-  { title: 'Calendar', href: '/daily/calendar', icon: Calendar, module: 'daily' },
   { title: 'Habits', href: '/daily/habits', icon: Target, module: 'daily' },
   { title: 'Goals', href: '/daily/goals', icon: BookOpen, module: 'daily' },
   { title: 'Finance', href: '/finance', icon: PieChart, module: 'finance' },

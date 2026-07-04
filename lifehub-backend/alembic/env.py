@@ -17,6 +17,9 @@ from app.base.models.tag import Tag, TagLink  # noqa: F401
 from app.base.models.sync import SyncLog  # noqa: F401
 from app.base.models.attachment import Attachment  # noqa: F401
 
+# Import module_daily models for Phase 2
+from app.modules.module_daily.models import Task, Habit, HabitLog, Goal  # noqa: F401
+
 # Alembic Config object
 config = context.config
 

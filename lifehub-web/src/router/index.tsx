@@ -4,9 +4,7 @@ import DashboardPage from '@/base/pages/DashboardPage'
 import TagsPage from '@/base/pages/TagsPage'
 import SettingsPage from '@/base/pages/SettingsPage'
 import { baseRoutes } from '@/base/router/baseRoutes'
-
-// Module routes (lazy-loaded for production)
-// import dailyRoutes from '@/modules/module-daily/routes'
+import dailyRoutes from '@/modules/module-daily/routes'
 // import financeRoutes from '@/modules/module-finance/routes'
 
 const router = createBrowserRouter([
@@ -17,8 +15,9 @@ const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: 'tags', element: <TagsPage /> },
       { path: 'settings', element: <SettingsPage /> },
-      // Module routes will be added here:
-      // ...dailyRoutes,
+      // Module daily routes
+      ...dailyRoutes,
+      // Module finance routes (will be added in Phase 3)
       // ...financeRoutes,
     ],
   },

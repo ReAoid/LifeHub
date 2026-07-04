@@ -1,6 +1,7 @@
 """Authentication service."""
 
 import logging
+import uuid
 
 from fastapi import HTTPException, status
 from jose import JWTError
@@ -107,7 +108,7 @@ class AuthService:
                 detail="Invalid or expired access token",
             )
 
-        result = await db.execute(select(User).where(User.id == user_id))
+        result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
         user = result.scalar_one_or_none()
         if not user:
             raise HTTPException(

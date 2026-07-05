@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useBudgetStore } from '../stores/budgetStore'
-import { BudgetWithSpending, AccountItem, createBill, fetchAccounts, EXPENSE_CATEGORIES } from '../api/financeApi'
+import { BudgetWithSpending, AccountItem, fetchAccounts, EXPENSE_CATEGORIES } from '../api/financeApi'
 import { LoadingSpinner } from '@/base/components/LoadingSpinner'
+import BudgetCard from '../components/BudgetCard'
 
 export default function BudgetBoardPage() {
   const { budgets, monthlyOverview, loading, error, loadBudgets, loadMonthlyOverview, addBudget, editBudget, removeBudget } = useBudgetStore()
@@ -21,18 +22,16 @@ export default function BudgetBoardPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
-  // Quick expense recording
-  const [expenseBudgetId, setExpenseBudgetId] = useState<string | null>(null)
-  const [expenseAmount, setExpenseAmount] = useState('')
-  const [expenseDesc, setExpenseDesc] = useState('')
-  const [expenseSubmitting, setExpenseSubmitting] = useState(false)
   const [accounts, setAccounts] = useState<AccountItem[]>([])
   const [accountsLoading, setAccountsLoading] = useState(true)
-  const [selectedAccountId, setSelectedAccountId] = useState('')
+
+  const loadBudgetsWithSpending = useCallback(async () => {
+    await loadMonthlyOverview(year, month)
+  }, [year, month, loadMonthlyOverview])
 
   useEffect(() => {
     loadBudgetsWithSpending()
-  }, [year, month])
+  }, [loadBudgetsWithSpending])
 
   // Load accounts once on mount
   useEffect(() => {
@@ -40,17 +39,10 @@ export default function BudgetBoardPage() {
     fetchAccounts()
       .then((list) => {
         setAccounts(list)
-        if (list.length > 0 && !selectedAccountId) {
-          setSelectedAccountId(list[0].id)
-        }
       })
       .catch(() => {})
       .finally(() => setAccountsLoading(false))
   }, [])
-
-  const loadBudgetsWithSpending = async () => {
-    await loadMonthlyOverview(year, month)
-  }
 
   const resetForm = () => {
     setFormData({ category: '其他', amount: 0, period: 'monthly', month })
@@ -109,34 +101,6 @@ export default function BudgetBoardPage() {
     if (window.confirm('确定删除此预算？')) {
       await removeBudget(budgetId)
       loadBudgetsWithSpending()
-    }
-  }
-
-  const handleQuickExpense = async (budget: any) => {
-    const amount = parseFloat(expenseAmount)
-    if (!amount || amount <= 0) return
-    if (!selectedAccountId) {
-      alert('请选择支出账户')
-      return
-    }
-    setExpenseSubmitting(true)
-    try {
-      await createBill({
-        account_id: selectedAccountId,
-        bill_type: 'expense',
-        amount,
-        category: budget.category,
-        description: expenseDesc || null,
-        bill_date: `${year}-${String(month).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
-      })
-      setExpenseBudgetId(null)
-      setExpenseAmount('')
-      setExpenseDesc('')
-      loadBudgetsWithSpending()
-    } catch (err: any) {
-      alert(err.response?.data?.message || err.message || '记录失败')
-    } finally {
-      setExpenseSubmitting(false)
     }
   }
 
@@ -214,181 +178,97 @@ export default function BudgetBoardPage() {
         </div>
       </div>
 
-      {/* Budget Progress Bars */}
-      <div className="space-y-3">
-        {budgetsList.map((budget: any) => {
-          const pct = budget.percentage || 0
-          const isOver = budget.is_over_budget
-          const isYearly = budget.period === 'yearly'
-          const monthlySpending = budget.monthly_spending as Array<{ month: number; spent: number; budget_share: number }> | undefined
+      {/* Budget Cards - Grid Layout */}
+      {budgetsList.length === 0 ? (
+        <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">
+          <p>暂无预算，点击"添加预算"开始</p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {/* Monthly Budgets Section */}
+          {(() => {
+            const monthlyBudgets = budgetsList.filter((b: any) => b.period !== 'yearly')
+            const yearlyBudgets = budgetsList.filter((b: any) => b.period === 'yearly')
 
-          return (
-            <div key={budget.id} className="rounded-lg border bg-card p-3 shadow-sm">
-              <div className="mb-1 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{budget.category}</span>
-                  {isYearly && (
-                    <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-200">
-                      年度
-                    </span>
-                  )}
-                  {isOver && (
-                    <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900 dark:text-red-200">
-                      超支
-                    </span>
-                  )}
-                </div>
-                <div className="text-right text-sm">
-                  <span className="font-medium">¥{budget.spent.toLocaleString()}</span>
-                  <span className="text-muted-foreground"> / ¥{budget.amount.toLocaleString()}</span>
-                </div>
-              </div>
-
-              {/* Progress bar: 12 segments for yearly, single bar for monthly */}
-              {isYearly && monthlySpending ? (
-                <div className="flex h-3 gap-0.5 rounded-full bg-secondary p-0.5">
-                  {monthlySpending.map((ms) => {
-                    const segPct = ms.budget_share > 0 ? (ms.spent / ms.budget_share) * 100 : 0
-                    const isPast = ms.month <= month
-                    const isCurrent = ms.month === month
-                    return (
-                      <div
-                        key={ms.month}
-                        className={`relative flex-1 rounded-sm transition-all ${
-                          !isPast
-                            ? 'bg-secondary'
-                            : segPct >= 100
-                              ? 'bg-red-500'
-                              : segPct > 80
-                                ? 'bg-amber-500'
-                                : segPct > 0
-                                  ? 'bg-green-500'
-                                  : 'bg-green-200'
-                        } ${isCurrent ? 'ring-1 ring-primary ring-offset-0' : ''}`}
-                        style={{
-                          opacity: isPast ? 1 : 0.3,
-                          height: segPct > 0 ? `${Math.min(segPct, 100)}%` : '30%',
-                          alignSelf: 'flex-end',
-                        }}
-                        title={`${ms.month}月: ¥${ms.spent.toLocaleString()} / ¥${ms.budget_share.toLocaleString()}`}
-                      />
-                    )
-                  })}
-                </div>
-              ) : (
-                <div className="h-2 w-full rounded-full bg-secondary">
-                  <div
-                    className={`h-2 rounded-full transition-all ${
-                      isOver ? 'bg-red-500' : pct > 80 ? 'bg-amber-500' : 'bg-green-500'
-                    }`}
-                    style={{ width: `${Math.min(pct, 100)}%` }}
-                  />
-                </div>
-              )}
-
-              <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                <span>{pct.toFixed(1)}%</span>
-                <span>剩余 ¥{Math.max(0, budget.remaining).toLocaleString()}</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between border-t pt-1">
-                <button
-                  onClick={() => {
-                    setExpenseBudgetId(expenseBudgetId === budget.id ? null : budget.id)
-                    setExpenseAmount('')
-                    setExpenseDesc('')
-                    if (accounts.length > 0 && !selectedAccountId) {
-                      setSelectedAccountId(accounts[0].id)
-                    }
-                  }}
-                  className="text-xs text-green-600 hover:underline disabled:opacity-40"
-                  disabled={accountsLoading}
-                >
-                  {accountsLoading ? '加载账户...' : '+ 记一笔'}
-                </button>
-                <div className="flex gap-2">
-                  <button onClick={() => handleEdit(budget)} className="text-xs text-blue-600 hover:underline">编辑</button>
-                  <button onClick={() => handleDelete(budget.id)} className="text-xs text-red-600 hover:underline">删除</button>
-                </div>
-              </div>
-
-              {/* Quick expense form */}
-              {expenseBudgetId === budget.id && (
-                <div className="mt-2 rounded-md border bg-muted/50 p-2">
-                  <div className="mb-2 text-xs font-medium text-muted-foreground">
-                    记录 {budget.category} 支出 — {year}年{month}月
-                  </div>
-                  <div className="flex flex-wrap items-end gap-2">
-                    <div className="flex-1">
-                      <label className="mb-0.5 block text-xs text-muted-foreground">金额</label>
-                      <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">¥</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0.01"
-                          value={expenseAmount}
-                          onChange={(e) => setExpenseAmount(e.target.value)}
-                          className="w-full rounded border bg-background py-1 pl-5 pr-2 text-xs"
-                          placeholder="0.00"
+            return (
+              <>
+                {monthlyBudgets.length > 0 && (
+                  <div>
+                    <div className="mb-4 flex items-center gap-2">
+                      <h2 className="text-lg font-semibold">月度预算</h2>
+                      <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-muted-foreground">
+                        {monthlyBudgets.length} 项
+                      </span>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {monthlyBudgets.map((budget: any) => (
+                        <BudgetCard
+                          key={budget.id}
+                          budget={budget}
+                          year={year}
+                          month={month}
+                          accounts={accounts}
+                          accountsLoading={accountsLoading}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                          onRefresh={loadBudgetsWithSpending}
                         />
-                      </div>
+                      ))}
                     </div>
-                    <div className="flex-1">
-                      <label className="mb-0.5 block text-xs text-muted-foreground">账户</label>
-                      <select
-                        value={selectedAccountId}
-                        onChange={(e) => setSelectedAccountId(e.target.value)}
-                        className="w-full rounded border bg-background py-1 pl-2 pr-1 text-xs"
-                      >
-                        {accountsLoading ? (
-                          <option value="">加载中...</option>
-                        ) : accounts.length === 0 ? (
-                          <option value="">暂无账户, 请先添加</option>
-                        ) : null}
-                        {accounts.map((acc) => (
-                          <option key={acc.id} value={acc.id}>
-                            {acc.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="w-24">
-                      <label className="mb-0.5 block text-xs text-muted-foreground">备注</label>
-                      <input
-                        type="text"
-                        value={expenseDesc}
-                        onChange={(e) => setExpenseDesc(e.target.value)}
-                        className="w-full rounded border bg-background py-1 pl-2 pr-2 text-xs"
-                        placeholder="选填"
-                      />
-                    </div>
-                    <button
-                      onClick={() => handleQuickExpense(budget)}
-                      disabled={expenseSubmitting || !expenseAmount || parseFloat(expenseAmount) <= 0}
-                      className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50"
-                    >
-                      {expenseSubmitting ? '保存中...' : '保存'}
-                    </button>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Divider between monthly and annual */}
+                {monthlyBudgets.length > 0 && yearlyBudgets.length > 0 && (
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                      <div className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="bg-card px-3 text-xs text-muted-foreground">年度预算</span>
+                    </div>
+                  </div>
+                )}
+
+                {yearlyBudgets.length > 0 && (
+                  <div>
+                    {monthlyBudgets.length === 0 && (
+                      <div className="mb-4 flex items-center gap-2">
+                        <h2 className="text-lg font-semibold">年度预算</h2>
+                        <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-muted-foreground">
+                          {yearlyBudgets.length} 项
+                        </span>
+                      </div>
+                    )}
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {yearlyBudgets.map((budget: any) => (
+                        <BudgetCard
+                          key={budget.id}
+                          budget={budget}
+                          year={year}
+                          month={month}
+                          accounts={accounts}
+                          accountsLoading={accountsLoading}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                          onRefresh={loadBudgetsWithSpending}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )
+          })()}
+
+          {/* Uncategorized spending */}
+          {uncategorizedSpent > 0 && (
+            <div className="rounded-lg border bg-card p-3 text-sm text-muted-foreground">
+              未分类支出: ¥{uncategorizedSpent.toLocaleString()}
             </div>
-          )
-        })}
-
-        {/* Uncategorized spending */}
-        {uncategorizedSpent > 0 && (
-          <div className="rounded-lg border bg-card p-3 text-sm text-muted-foreground">
-            未分类支出: ¥{uncategorizedSpent.toLocaleString()}
-          </div>
-        )}
-
-        {budgetsList.length === 0 && (
-          <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">
-            <p>暂无预算，点击"添加预算"开始</p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Create/Edit Form */}
       {showForm && (
